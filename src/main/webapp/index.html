@@ -9,6 +9,8 @@
 		<script type="text/javascript" src="js/jquery-1.6.2.min.js"></script>
 		<script type="text/javascript" src="js/jquery-ui-1.8.16.custom.min.js"></script>
 		<script type="text/javascript" src="js/jquery.selectBox.min.js"></script>
+		<script type="text/javascript" src="js/jquery.tagcloud-2.js"></script>
+		
 
 		<script type="text/javascript">
 		$(document).ready(function() {
@@ -30,9 +32,6 @@
 				});
 
 
-				// Select
-				$('SELECT').selectBox();		
-
 				// Select event triggers ajax call
 				$('select.team').change(function() {
 
@@ -41,6 +40,8 @@
 
 				});
 				
+				
+				// Loads the accordions with the list of PTRs 
 				function loadMsgs(teamVal) {
 					
     				$.get('./Messages', {team: teamVal},
@@ -51,6 +52,8 @@
     		            	    $('#accordion').accordion("destroy");
     		            	    
     		            	    var htmlStr = "";
+    		            	    var tags = new Array();
+    		            	    var msgTitles = {};
     		            	    
     		            	    for(var ptr in data){
     		            	    	
@@ -65,6 +68,11 @@
         								var msg = data[ptr][i];
         								htmlStr += "<li><b>[" + msg.severity + "]</b> ";
         								htmlStr += msg.title + " - " + msg.details +  "</li>";
+										addTags(tags, msg);
+										// add titles
+										if (!(msg.title in msgTitles)){
+											msgTitles[msg.title]=true;
+										}
         							}
         							
         							htmlStr += "</ul></div></div>";
@@ -73,7 +81,46 @@
     		            	    $('#accordion').html(htmlStr);
     		            	    $('#accordion').accordion({ header: "h3", event: "mouseover" });
     		            	    
+    		            	    $("#tags").tagCloud(tags);
+    		            	    
+    		            	    // SELECT BOX PART
+    		            	    $('#msgs').empty();
+    		            	    $('SELECT').selectBox("destroy");
+    		            	    
+    		            	    for (var title in msgTitles) {
+    		            	    	
+		            	    		$('#msgs').append("<option value='" + title + "'>" + title + "</option>"); 
+    		            	    }
+    		            	    
+    		            	    $('SELECT').selectBox();
+    		            	    
     		    	        }, 'json');
+				}
+				
+				function addTags(tags, msg) {
+					
+					// tags in the msg
+					for (var i = 0; i < msg.tags.length; i++) {
+						
+						var found = false;
+						
+						// existing tags
+						for (var j = 0; j < tags.length; j++) {
+							if (msg.tags[i] == tags[j].tag) {
+								tags[j].count++;
+								found = true;
+								break;
+							}							
+						}
+						
+						// Initialize the new tag if it couldn't be found in the previous loop
+						if (!found) {
+							var elem = new Object();
+							elem.tag = msg.tags[i];
+							elem.count = 1;
+							tags[j++] = elem;
+						}
+					}
 				}
 		});
 			
@@ -89,6 +136,21 @@
 			ul#icons {margin: 0; padding: 0;}
 			ul#icons li {margin: 2px; position: relative; padding: 4px 0; cursor: pointer; float: left;  list-style: none;}
 			ul#icons span.ui-icon {float: left; margin: 0 4px;}
+			
+			#accordion {
+				float:left;
+				width:70%;
+			}
+			
+			#tags {
+				float:right;
+				width:25%;
+			}
+			
+			a.tagcloudlink {
+				color:#E17009;
+			}
+			
 		</style>	
 	</head>
 	<body>
@@ -100,9 +162,15 @@
 			    		<option value="FRW" selected="selected">FRW</option>
 			    		<option value="SCC">SCC</option>
 			</select>
+			<select id="msgs" name="msgs-select">
+			</select>
+			
 		</p>
-
+	
 		<div id="accordion">
+		</div>
+		
+		<div id="tags">
 		</div>
 	
 		
